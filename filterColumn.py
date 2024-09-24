@@ -33,13 +33,24 @@ patterns = [
 # Filter the columns that match any of the patterns
 import re
 
-matching_columns = [
+matching_columns = []
+matching_columns.append("HH_ID")
+matching_columns.append("month:1")
+matching_columns.append("year:1")
+matching_columns.append("STATE")
+matching_columns.append("DISTRICT")
+matching_columns.append("REGION_TYPE")
+matching_columns.append("GENDER")
+matching_columns.append("AGE_YRS")
+matching_columns.append("R_MEM_WGT_FOR_STATE_MS")
+
+
+matching_columns += [
     col
     for col in columns
     if any(re.search(f"^{pattern}|{pattern}", col) for pattern in patterns)
 ]
-matching_columns.append("GENDER")
-matching_columns.append("AGE_YRS")
+
 # If no columns matched, raise an error
 if not matching_columns:
     raise ValueError("No columns matching the patterns found!")
@@ -50,9 +61,10 @@ for col in matching_columns:
 
 # Create the SQL query to select only the necessary columns
 selected_columns = ", ".join(matching_columns)
-select_query = (
-    f"SELECT {selected_columns} FROM filteredStates;"  # Replace with your table name
-)
+# select_query = (
+#     f"SELECT {selected_columns} FROM filteredStates;"  # Replace with your table name
+# )
+select_query = f"SELECT * FROM filteredStates;"  # Replace with your table name
 
 # Stream data in chunks instead of loading everything at once (use chunksize for large tables)
 chunk_size = 1000000  # Adjust the chunk size based on memory limits
