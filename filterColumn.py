@@ -1,5 +1,7 @@
 import sqlite3
 import pandas as pd
+import re
+from tqdm import tqdm
 
 # Connect to the original SQLite database
 original_db = "ladli.db"  # Replace with your original DB path
@@ -29,21 +31,18 @@ patterns = [
     "BANK",
 ]
 
-
 # Filter the columns that match any of the patterns
-import re
-
-matching_columns = []
-matching_columns.append("HH_ID")
-matching_columns.append("month:1")
-matching_columns.append("year:1")
-matching_columns.append("STATE")
-matching_columns.append("DISTRICT")
-matching_columns.append("REGION_TYPE")
-matching_columns.append("GENDER")
-matching_columns.append("AGE_YRS")
-matching_columns.append("R_MEM_WGT_FOR_STATE_MS")
-
+matching_columns = [
+    "HH_ID",
+    "month",
+    "year",
+    "STATE",
+    "DISTRICT",
+    "REGION_TYPE",
+    "GENDER",
+    "AGE_YRS",
+    # "R_MEM_WGT_FOR_STATE_MS",
+]
 
 matching_columns += [
     col
@@ -55,16 +54,19 @@ matching_columns += [
 if not matching_columns:
     raise ValueError("No columns matching the patterns found!")
 
-print("matches columns:")
-for col in matching_columns:
-    print(col)
+# print("Matched columns:")
+# for col in matching_columns:
+#     print(col)
 
 # Create the SQL query to select only the necessary columns
 selected_columns = ", ".join(matching_columns)
-# select_query = (
-#     f"SELECT {selected_columns} FROM filteredStates;"  # Replace with your table name
-# )
-select_query = f"SELECT * FROM filteredStates;"  # Replace with your table name
+select_query = (
+    f"SELECT {selected_columns} FROM filteredStates;"  # Replace with your table name
+)
+
+# Get the total number of rows for the progress bar
+total_rows = pd.read_sql_query("SELECT COUNT(*) FROM filteredStates", conn).iloc[0, 0]
+print(f"Total rows: {total_rows}")
 
 # Stream data in chunks instead of loading everything at once (use chunksize for large tables)
 chunk_size = 1000000  # Adjust the chunk size based on memory limits
@@ -74,9 +76,11 @@ chunk_iter = pd.read_sql_query(select_query, conn, chunksize=chunk_size)
 new_db = "filteredStatesColumns.db"  # Replace with the path to the new SQLite database
 conn_new = sqlite3.connect(new_db)
 
-# Write chunks to the new database incrementally
-for chunk in chunk_iter:
-    chunk.to_sql("filtered_table", conn_new, if_exists="append", index=False)
+# Write chunks to the new database incrementally with progress bar
+with tqdm(total=total_rows, desc="Processing rows") as pbar:
+    for chunk in chunk_iter:
+        chunk.to_sql("filtered_table", conn_new, if_exists="append", index=False)
+        pbar.update(len(chunk))
 
 # Close both database connections
 conn.close()
