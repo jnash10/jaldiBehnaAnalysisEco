@@ -33,6 +33,7 @@ patterns = [
 
 # Filter the columns that match any of the patterns
 matching_columns = [
+    "WAVE_NO",
     "HH_ID",
     "month",
     "year",
@@ -55,25 +56,26 @@ if not matching_columns:
     raise ValueError("No columns matching the patterns found!")
 
 # print("Matched columns:")
-# for col in matching_columns:
-#     print(col)
+# print(matching_columns)
+print(columns)
+input("Press Enter to continue...")
 
 # Create the SQL query to select only the necessary columns
 selected_columns = ", ".join(matching_columns)
-select_query = (
-    f"SELECT {selected_columns} FROM filteredStates;"  # Replace with your table name
-)
+select_query = f"SELECT * FROM filteredStates;"  # Replace with your table name
 
 # Get the total number of rows for the progress bar
 total_rows = pd.read_sql_query("SELECT COUNT(*) FROM filteredStates", conn).iloc[0, 0]
 print(f"Total rows: {total_rows}")
 
 # Stream data in chunks instead of loading everything at once (use chunksize for large tables)
-chunk_size = 1000000  # Adjust the chunk size based on memory limits
+chunk_size = 100000  # Adjust the chunk size based on memory limits
 chunk_iter = pd.read_sql_query(select_query, conn, chunksize=chunk_size)
 
 # Connect to the new SQLite database
-new_db = "filteredStatesColumns.db"  # Replace with the path to the new SQLite database
+new_db = (
+    "filteredStatesAllColumns.db"  # Replace with the path to the new SQLite database
+)
 conn_new = sqlite3.connect(new_db)
 
 # Write chunks to the new database incrementally with progress bar
